@@ -99,6 +99,9 @@ impl eframe::App for TemplateApp {
             ui.add(doc_link_label("Plot", "plot"));
             example_plot(ui);
             ui.end_row();
+            ui.add(doc_link_label("Box Plot", "box plot"));
+            example_boxplot(ui);
+            ui.end_row();
             egui::warn_if_debug_build(ui);
         });
 
@@ -122,8 +125,28 @@ fn example_plot(ui: &mut egui::Ui) -> egui::Response {
     });
     let line = Line::new(Values::from_values_iter(sin));
     Plot::new("my_plot")
-        .view_aspect(1.0)
+        .view_aspect(2.0)
         .show(ui, |plot_ui| plot_ui.line(line))
+        .response
+}
+
+fn example_boxplot(ui: &mut egui::Ui) -> egui::Response {
+    use egui::plot::{BoxElem, BoxPlot, BoxSpread, Plot};
+    let n = 20;
+    let box_spread: BoxSpread = BoxSpread {
+        lower_whisker: 0.0,
+        quartile1: 0.25,
+        median: 0.5,
+        quartile3: 0.75,
+        upper_whisker: 1.0,
+    };
+    let values: Vec<BoxElem> = (0..=n)
+        .map(|i| BoxElem::new(i as f64, box_spread.clone()))
+        .collect();
+    let boxes = BoxPlot::new(values);
+    Plot::new("box_plot")
+        .view_aspect(2.0)
+        .show(ui, |plot_ui| plot_ui.box_plot(boxes))
         .response
 }
 
