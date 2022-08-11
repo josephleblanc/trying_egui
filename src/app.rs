@@ -1,4 +1,4 @@
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
+// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
@@ -96,6 +96,9 @@ impl eframe::App for TemplateApp {
                 "https://github.com/emilk/eframe_template/blob/master/",
                 "Source code."
             ));
+            ui.add(doc_link_label("Plot", "plot"));
+            example_plot(ui);
+            ui.end_row();
             egui::warn_if_debug_build(ui);
         });
 
@@ -107,5 +110,32 @@ impl eframe::App for TemplateApp {
                 ui.label("You would normally chose either panels OR windows.");
             });
         }
+    }
+}
+
+fn example_plot(ui: &mut egui::Ui) -> egui::Response {
+    use egui::plot::{Line, Plot, Value, Values};
+    let n = 128;
+    let sin = (0..=n).map(|i| {
+        let x = i as f64 * 0.01;
+        Value::new(x, x.sin())
+    });
+    let line = Line::new(Values::from_values_iter(sin));
+    Plot::new("my_plot")
+        .view_aspect(1.0)
+        .show(ui, |plot_ui| plot_ui.line(line))
+        .response
+}
+
+fn doc_link_label<'a>(title: &'a str, search_term: &'a str) -> impl egui::Widget + 'a {
+    let label = format!("{}:", title);
+    let url = format!("https://docs.rs/egui?search={}", search_term);
+    move |ui: &mut egui::Ui| {
+        ui.hyperlink_to(label, url).on_hover_ui(|ui| {
+            ui.horizontal_wrapped(|ui| {
+                ui.label("Search egui docs for");
+                ui.code(search_term);
+            });
+        })
     }
 }
