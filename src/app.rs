@@ -10,6 +10,20 @@ pub struct TemplateApp {
     value: f32,
 }
 
+#[allow(non_snake_case)]
+#[derive(serde::Deserialize, Debug, Default, Clone)]
+pub struct Data {
+    pub time: u64,
+    pub high: f32,
+    pub low: f32,
+    pub open: f32,
+    pub volumefrom: f32,
+    pub volumeto: f32,
+    pub close: f32,
+    pub conversionType: String,
+    pub conversionSymbol: Option<String>,
+}
+
 impl Default for TemplateApp {
     fn default() -> Self {
         Self {
@@ -131,17 +145,29 @@ fn example_plot(ui: &mut egui::Ui) -> egui::Response {
 }
 
 fn example_boxplot(ui: &mut egui::Ui) -> egui::Response {
+    let data = include_str!("/home/brasides/programming/data/BTC_historic_minute/master/2022-07-21_to_2022-08-17_15:13:00.csv");
+    use csv::Reader;
     use egui::plot::{BoxElem, BoxPlot, BoxSpread, Plot};
-    let n = 20;
-    let box_spread: BoxSpread = BoxSpread {
-        lower_whisker: 0.0,
-        quartile1: 0.25,
-        median: 0.5,
-        quartile3: 0.75,
-        upper_whisker: 1.0,
-    };
-    let values: Vec<BoxElem> = (0..=n)
-        .map(|i| BoxElem::new(i as f64, box_spread.clone()))
+    let n = 40;
+    let mut rdr = Reader::from_reader(data.as_bytes());
+    //.expect("Could not load .csv file from data of include_str!(filepath)")
+    let values: Vec<BoxElem> = rdr
+        .deserialize::<Data>()
+        .zip((0..n).into_iter())
+        .map(|(d, i)| {
+            let row = d.unwrap();
+            (
+                i as f64,
+                BoxSpread {
+                    lower_whisker: row.low as f64,
+                    quartile1: row.open.min(row.close) as f64,
+                    median: ((row.high + row.low + row.close) / 3.0_f32) as f64,
+                    quartile3: row.open.max(row.close) as f64,
+                    upper_whisker: row.high as f64,
+                },
+            )
+        })
+        .map(|(i, box_spread)| BoxElem::new(i, box_spread))
         .collect();
     let boxes = BoxPlot::new(values);
     Plot::new("box_plot")
